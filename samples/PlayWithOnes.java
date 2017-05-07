@@ -29,84 +29,92 @@ public class PlayWithOnes
 	{
 		input = args[0];
 		getNextToken();
-		S();
+		int answer = S();
+		System.out.println(answer);
 	}
 	
 	// production: S -> E.
-	public static void S()
+	public static int S()
 	{
-                E();
+        int ans = E();
 		if ( token == '.' && !errFlag )
 			System.out.println( "string accepted" );
 		else
 			System.out.printf( "string not accepted (error on or before position %d)\n", position );
+	    return ans;
 	}
 
 	// production: E->TA
-	public static void E()
+	public static int E()
 	{
-                T();
-                A();
-    }
+			int x = T();
+            int y = A();
+			return x + y;
+   }
 
 
 	// productions: A->+TA|eps
-	public static void A()
+	public static int A()
 	{
 		if ( token == '+' )
 		{
 			getNextToken();
-			T();
-            A();
+			int x = T();
+            int y = A();
+			return x + y;
 		}
 		else
-            ; // do nothing (eps)
+            return 0; // do nothing (eps)
 	}
 
 	// production: T->FB
-	public static void T()
+	public static int T()
 	{
-        F();
-        B();
-    }
+ 			int x = F();
+            int y = B();
+			return x*y;
+	}
 
 	// productions: B->*FB|eps
-	public static void B()
+	public static int B()
 	{
 		if ( token == '*' )
 		{
 			getNextToken();
-			F();
-            B();
+			int x = F();
+            int y = B();
+			return x*y;
 		}
 		else
-            ; // do nothing (eps)
+            return 1; // do nothing (eps)
 	}
 
 	// productions: F->-X|X
-	public static void F()
+	public static int F()
 	{
 		if ( token == '-' )
 		{
 			getNextToken();
-			X();
+			return -X();
 		}
 		else
-            X();
+            return X();
 	}
 
 	// productions: X->1|(E)
-	public static void X()
+	public static int X()
 	{
-		if ( token == '1' )            
+		int ans = 0;
+		if ( token >= '0' && token <= '9')            
 		{
+			ans = token-'0';
 			getNextToken();
             // that's it.
 		}
 		else if ( token == '(' )
                 {        
                         getNextToken();    
-                        E();
+                        ans = E();
                         if ( token == ')' )
                            getNextToken();
                         else
@@ -115,6 +123,7 @@ public class PlayWithOnes
                 }
                 else
                         error( "X1" );
+		return ans;
 	}
 	
 	public static void error( String from )
