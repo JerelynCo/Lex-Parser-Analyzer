@@ -2,7 +2,9 @@ letters = ["A", "B", "C", "D", "E", "F",
    "G", "H", "I", "J", "K", "L",
    "M", "N", "O", "P", "Q", "R", 
    "S", "T", "U", "V", "W", "X", 
-   "Y", "Z"] 
+   "Y", "Z"]
+
+letters.extend([i.lower() for i in letters])
 
 digits = ["0", "1", "2", "3", "4", 
   "5", "6", "7", "8", "9"]
@@ -10,7 +12,7 @@ digits = ["0", "1", "2", "3", "4",
 tf = {0: {"letter": 1, "space": 0, "e": 1, "quotation": 3, "equals": 5, "plus": 6, 
           "minus": 7, "mult":8, "slash":11, "modulo": 12, "lparen": 13, 
           "rparen": 14, "comma": 15, "semicolon": 16, "eof": 17, "dot": 26,
-          "other": 0, "nl":0, "digit": 18, "pound": 24, "greater":27, "lesser":28},
+          "other": 0, "nl":0, "digit": 18, "pound": 24, "greater":27, "lesser":28, "not":29},
       # Identifier
       1: {"letter": 1, "e": 1, "digit": 1, "space": 2, "equals": 2, "nl":2, 
           "lparen": 2, "rparen": 2, "semicolon": 2, "eof": 2, "dot": 2,
@@ -32,7 +34,8 @@ tf = {0: {"letter": 1, "space": 0, "e": 1, "quotation": 3, "equals": 5, "plus": 
       24: {"letter": 24, "e": 24, "digit": 24, "other": 24, "eof": 24,
           "dot": 24, "lparen": 24, "rparen": 24, "modulo": 24, "space": 24,
           "plus": 24, "minus": 24, "equals": 24, "quotation": 24, "comma": 24,
-          "semicolon": 24, "eof": 24, "mult": 24, "slash": 24, "nl":25},
+          "semicolon": 24, "eof": 24, "mult": 24, "pound":24, "greater":24,
+          "lesser":24, "slash": 24, "nl":25},
       # Digit
       18: {"digit": 18, "dot": 26, "e": 20, "space": 22, "nl":22, "lparen": 22, 
            "rparen": 22, "slash": 22, "modulo": 22, "plus": 22, "mult": 22,
@@ -54,7 +57,8 @@ tf = {0: {"letter": 1, "space": 0, "e": 1, "quotation": 3, "equals": 5, "plus": 
 
 accept_states = {2: "IDENT", 4: "STRING", 5: "EQUALS", 6: "PLUS", 7: "MINUS", 9: "MULT", 
                  10: "EXP", 23:"DIVIDE", 12: "MODULO", 13: "LPAREN", 14: "RPAREN", 15: "COMMA",
-                 16: "SEMICOL", 17: "EOF", 22: "NUMBER", 25: "COMMENT", 27: "GREATER", 28: "LESSER"}
+                 16: "SEMICOL", 17: "EOF", 22: "NUMBER", 25: "COMMENT", 27: "GREATER", 28: "LESSER",
+                 29: "NOT"}
 
 errors = {1: "Badly-formed number", 2: "Illegal Character", 3: "Unterminated String"}
 
@@ -65,7 +69,6 @@ class LexAnalyzer:
         else:
             self.input = text
         
-        self.input = self.input.upper()
         self.position = 0
         
         self.start_state = 0
@@ -96,7 +99,7 @@ class LexAnalyzer:
                            "*": "mult", "/": "slash", "%": "modulo", "(": "lparen",
                            ")": "rparen", ",": "comma", ";": "semicolon", "$": "eof", 
                            ".": "dot", " ": "space", ">": "greater", "<": "lesser",
-                           "\n": "nl", "E": "e", "#": "pound"}
+                           "\n": "nl", "E": "e", "e": "e", "#": "pound", "!": "not"}
         
         if token in token_type_dict.keys():
             return token_type_dict[token]

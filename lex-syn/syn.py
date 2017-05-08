@@ -8,7 +8,7 @@ class SynAnalyzer:
         
         self.err_flag = False
         
-        self.rel = ['<', '>', '<=', '>=', '==', '!=']
+        self.conds = ["GREATER", "LESSER", "EQUALS", "NOT"]
         self.E_ident = ["NUMBER", "IDENT", "LPAREN", "RPAREN", "SQRT"]
     
     def set_next_pair(self):
@@ -22,11 +22,21 @@ class SynAnalyzer:
     def get_variable_value(self, var):
         dict_var = dict(self.variables)
         if var in dict_var.keys():
-            return dict_var[var]
-        return None
+            try:
+                return float(dict_var[var])
+            except Exception as e:
+                return dict_var[var]
+        return 0
+    def get_curr_lexeme(self):
+        if self.token == "IDENT":
+            return self.get_variable_value(self.lexeme)
+        elif self.token == "NUMBER":
+            return float(self.lexeme)
+        error(1, "COND")
         
     def error(self, error_type, class_src):
-        errors = {1: "Unexpected token", 2: "Inappropriate argument"}
+        errors = {1: "Unexpected token", 2: "Inappropriate argument", 3: "Invalid assignment", 
+        4: "Undeclared variable"}
         print("[{}] Error: {}; Token: {}; Lexeme: {}; Position: {}".format(class_src, errors[error_type], 
                                                                self.token, self.lexeme, self.position))
         self.err_flag = True
@@ -37,7 +47,6 @@ class SynAnalyzer:
             self.err_msg = "Missing semicolon"
             return False
         elif self.token == "SEMICOL" and self.token != "EOF":
-            print("Done statement.")
             self.set_next_pair()
             self.S()
         return True
@@ -46,8 +55,8 @@ class SynAnalyzer:
     def S(self): 
         res = -1
         ans = None
-        
-        if self.token == "IF":
+
+        if self.token == "IF" and not self.err_flag:
             self.set_next_pair()
             if self.token == "LPAREN":
                 self.set_next_pair()
@@ -58,30 +67,34 @@ class SynAnalyzer:
                         self.set_next_pair()
                         if cond_res:
                             print("Condition met.", end=" ")
-                            
                             # Handling expression
-                            if self.token in self.E_ident:
+                            if self.token in ["NUMBER", "LPAREN", "RPAREN", "SQRT"]:
                                 ans = self.E()
                                 print("Computation performed", ends=" ") 
                                 self.set_next_pair()
                                 if not self.check_semicolon():
-                                    self.error(1, "S")
+                                    self.error(1, "S:IF")
                                   
                             # Recurse to S
                             elif self.token in ["IF", "PRINT", "IDENT"]: # S identifiers
                                 self.S()
                         else:
                             print("Condition not met.")
+                            #CONTINUE TO SEMICOLON
+                            while self.token != "SEMICOL":
+                                self.set_next_pair()
+                            self.set_next_pair()
+                            self.S()
                     else:
-                        self.error(1, "S")
+                        self.error(1, "S:IF")
                 else:
-                    self.error(1, "S")
+                    self.error(1, "S:IF")
             else:
-                self.error(1, "S")
+                self.error(1, "S:IF")
                 
             return ans
 
-        elif self.token == "PRINT":
+        elif self.token == "PRINT" and not self.err_flag:
             msg = ""
             self.set_next_pair()
             
@@ -90,28 +103,32 @@ class SynAnalyzer:
                 self.set_next_pair()
                 if self.token == "STRING":
                     msg = self.lexeme
-                    
-                elif self.token == "IDENT":
-                    msg = self.get_variable_value(self.lexeme)
+                    print("Output: ({})".format(msg))
+                    self.set_next_pair()
+
+                elif self.token in self.E_ident:
+                    msg = self.E()
+                    print("Output: ({})".format(msg))
                     if msg is None:
-                        self.error("undeclared variable")
+                        self.error(1, "S:PRINT")
+
                 else:
                     self.error(2, "S")
-                            
-                
-                self.set_next_pair()
+    
                 if self.token == "RPAREN":
                     self.set_next_pair()
-                    if self.check_semicolon():
-                        print("Output: ({})".format(msg))
+                    if not self.check_semicolon():
+                        self.error(2, "S:PRINT")
+                        
                 else:
-                    self.error(1, "S")
+                    print(self.token)
+                    self.error(1, "S:PRINT")
             else:
-                self.error(1, "S")
+                self.error(1, "S:PRINT")
                 
             return True
             
-        elif self.token == "IDENT":
+        elif self.token == "IDENT" and not self.err_flag:
             var_name = self.lexeme
             self.set_next_pair()
             
@@ -123,41 +140,86 @@ class SynAnalyzer:
                     self.variables[var_name] = val
                     print("Computation performed ({} = {})".format(var_name, val))
                     if not self.check_semicolon():
-                        self.error(1, "S")
+                        self.error(1, "S:IDENT")
                 else:
-                    self.error(1, "S")
+                    self.error(1, "S:IDENT")
             else:
-                self.error(1, "S")
+                self.error(1, "S:IDENT")
                             
             return True
         
     # should return true or false
     def COND(self):
-        return 0
+        var1_val = self.E()
 
-    # Production E -> EA E' 
-    # should return value
+        var2_val = None
+        cond1 = None
+        cond2 = None
+
+        # self.set_next_pair()
+
+        if self.token in self.conds:
+            cond1 = self.token
+            self.set_next_pair()
+
+            if cond1 == "NOT":
+                if self.token == "EQUALS":
+                    cond2 = self.token
+                    self.set_next_pair()
+                    var2_val = self.get_curr_lexeme()
+                else:
+                    error(1, "COND:NOT")
+            else:
+                if self.token in self.conds:
+                    cond2 = self.token
+                    self.set_next_pair()
+                    var2_val = self.get_curr_lexeme()
+                elif self.token in ["NUMBER", "IDENT"]:
+                    var2_val = self.get_curr_lexeme()
+
+            if cond1 == "GREATER":
+                if cond2 == "EQUALS":
+                    return var1_val >= var2_val
+                return var1_val > var2_val
+            elif cond1 == "LESSER":
+                if cond2 == "EQUALS":
+                    return var1_val <= var2_val
+                return var1_val < var2_val
+            elif cond1 == "EQUALS":
+                if cond2 == "EQUALS":
+                    return var1_val == var2_val
+                self.error(3, "COND")
+            elif cond1 == "NOT":
+                if cond2 == "EQUALS":
+                    return var1_val != var2_val
+                self.error(3, "COND")
+            else:
+                self.error(1, "COND")
+
+        self.error(1, "COND")
+
+    # Production E -> EA E'
     def E(self):
-        print("In E: Lexeme: {}".format(self.lexeme))
+        # print("In E: Lexeme: {}".format(self.lexeme))
         x = self.EA()
         y = self.E_prime()
-        print("In E: {}, {}".format(x,y))
+        # print("In E: {}, {}".format(x,y))
         return x + y
 
     # Production E' -> + EA E' | - EA E' | epsilon
     def E_prime(self):
-        print("In E_PRIME: Lexeme: {}".format(self.lexeme))
+        # print("In E_PRIME: Lexeme: {}".format(self.lexeme))
         if self.token == "PLUS":
             self.set_next_pair()
             x = self.EA()
             y = self.E_prime()
-            print("In E_PRIME: {} + {}".format(x,y))
+            # print("In E_PRIME: {} + {}".format(x,y))
             return x + y
         elif self.token == "MINUS":
             self.set_next_pair()
             x = self.EA()
             y = self.E_prime()
-            print("In E_PRIME: {} - {}".format(x,y))
+            # print("In E_PRIME: {} - {}".format(x,y))
             return -x + y
         else:
             return 0
@@ -166,7 +228,7 @@ class SynAnalyzer:
     def EA(self):
         x = self.EB()
         y = self.EA_prime()
-        print("In EA: {}, {}".format(x,y))
+        # print("In EA: {}, {}".format(x,y))
         return x * y
     
     # Production EA' -> * EB EA' | / EB EA' | epsilon
@@ -186,7 +248,7 @@ class SynAnalyzer:
 
     # Production EB -> -EC | EC
     def EB(self):
-        print(self.token)
+        # print(self.token)
         if self.token == "MINUS":
             self.set_next_pair()
             return -1*self.EC()
@@ -197,9 +259,8 @@ class SynAnalyzer:
     def EC(self):
         x = self.ED()
         y = self.EC_prime()
-        print("In EC: {}, {}".format(x,y))
+        # print("In EC: {}, {}".format(x,y))
         return x ** y
-
 
     # Production EC' -> * * ED EC' | epsilon
     def EC_prime(self):
@@ -207,7 +268,7 @@ class SynAnalyzer:
             self.set_next_pair()
             x = self.ED()
             y = self.EC_prime()
-            print("{}, {}".format(x,y))
+            # print("{}, {}".format(x,y))
             return x * y
         else:
             return 1
@@ -216,17 +277,16 @@ class SynAnalyzer:
     # Production ED -> NUMBER | IDENT | (E) | SQRT(E)
     def ED(self):
         if self.token == "NUMBER":
-            val = int(self.lexeme)
+            val = float(self.lexeme)
             self.set_next_pair()
             return val
         elif self.token == "IDENT":
-            val = get_variable_value(self.lexeme)
+            val = self.get_variable_value(self.lexeme)
             self.set_next_pair()
             return val
         elif self.token == "LPAREN":
             self.set_next_pair()
             val = self.E()
-            self.set_next_pair()
             if self.token == "RPAREN":
                 self.set_next_pair()
                 return val
@@ -237,7 +297,6 @@ class SynAnalyzer:
             if self.token == "LPAREN":
                 self.set_next_pair()
                 val = self.E()
-                self.set_next_pair()
                 if self.token == "RPAREN":
                     self.set_next_pair()
                     return val ** (0.5)
