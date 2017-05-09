@@ -1,0 +1,44 @@
+
+# simple
+
+PRINT("Simple stuff");
+var123 = 1.23;
+var456 = 45e6;
+PRINT(var123); PRINT(var456);
+
+result1 = var456/1.23;
+PRINT(result1);
+result2 = (1+1)**(2+2);
+PRINT(result2);
+
+x = SQRT(5);
+PRINT(x+x);
+PRINT("---@---");
+
+# nested
+
+PRINT("Nested stuff");
+
+result3 = (1+1)*2-2*(1+(1+2));
+PRINT(result3);
+y = SQRT(5**(2+2));
+PRINT(y);
+PRINT(
+      SQRT(100)
+);
+
+# conditionals
+
+xx = 5;
+IF (x > 2) PRINT("Greater");
+IF (x < 2) PRINT("Less");
+IF   (x+xx+y >= result3)   PRINT("Ok"); // one of these
+IF(x+xx+y <result3)PRINT("Not Ok");     // should print out
+
+# special cases
+
+PRINT(notyetassigned);
+nowassigned = notyetassigned + 1;
+IF ( 1 != 2
+ ) PRINT(
+nowassigned);

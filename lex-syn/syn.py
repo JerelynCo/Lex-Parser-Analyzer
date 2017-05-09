@@ -1,3 +1,31 @@
+"""
+**CFG**
+S -> IF(COND) E; | IF(COND) S; | PRINT(STRING); | IDENT = E;
+COND -> E REL E 
+REL -> '<' | '>' | '<=' | '>=' | '==' | '!='
+
+E -> E + EA | E - EA | EA 
+EA -> EA * EB | EA / EB | EB
+EB -> -EC | EC
+EC -> EC * * ED | ED
+ED -> NUMBER | IDENT | ( E ) | SQRT(E)
+
+**LL1**
+S -> IF(COND) E SEMICOL | IF(COND) S SEMICOL | PRINT(STRING) SEMICOL | PRINT(E) | IDENT = E SEMICOL
+
+COND -> E REL E 
+REL -> '<' | '>' | '<=' | '>=' | '==' | '!='
+
+E -> EA E' 
+E' -> + EA E' | - EA E' | epsilon
+EA -> EB EA' 
+EA' -> * EB EA' | / EB EA' | epsilon
+EB -> -EC | EC
+EC -> ED EC' 
+EC' -> * * ED EC' | ED | epsilon
+ED -> NUMBER | IDENT | ( E ) | SQRT(E)
+"""
+
 class SynAnalyzer:
     def __init__(self, lex_pairs=None):
         self.lex_pairs = lex_pairs
@@ -11,7 +39,9 @@ class SynAnalyzer:
         self.conds = ["GREATER", "LESSER", "EQUALS", "NOT"]
         self.E_ident = ["NUMBER", "IDENT", "LPAREN", "RPAREN", "SQRT"]
     
+
     def set_next_pair(self):
+        """Similar to get_next_token in Lex"""
         if self.token == "EOF":
             print("End reached.")
         else:
@@ -20,6 +50,7 @@ class SynAnalyzer:
             self.lexeme = self.lex_pairs[self.position][1]
             
     def get_variable_value(self, var):
+        """ Gets value from dictionary of variables declared in program"""
         dict_var = dict(self.variables)
         if var in dict_var.keys():
             try:
@@ -27,14 +58,17 @@ class SynAnalyzer:
             except Exception as e:
                 return dict_var[var]
         return 0
+
     def get_curr_lexeme(self):
+        """ If token is identifier, it's a variable. If token is just number, return as is"""
         if self.token == "IDENT":
             return self.get_variable_value(self.lexeme)
         elif self.token == "NUMBER":
             return float(self.lexeme)
-        error(1, "COND")
+        error(1, "COND:Value neither variable nor number")
         
     def error(self, error_type, class_src):
+        """ Classes of errors """ 
         errors = {1: "Unexpected token", 2: "Inappropriate argument", 3: "Invalid assignment", 
         4: "Undeclared variable"}
         print("[{}] Error: {}; Token: {}; Lexeme: {}; Position: {}".format(class_src, errors[error_type], 
@@ -51,7 +85,7 @@ class SynAnalyzer:
             self.S()
         return True
             
-    # Production S -> IF(COND) E ; | IF(COND) S | PRINT(STRING) ; | PRINT(IDENT) ; | IDENT = E ;
+    # Production S -> IF(COND) E ; | IF(COND) S | PRINT(STRING) ; | PRINT(E) ; | IDENT = E ;
     def S(self): 
         res = -1
         ans = None
@@ -61,6 +95,7 @@ class SynAnalyzer:
             if self.token == "LPAREN":
                 self.set_next_pair()
                 if self.token in self.E_ident:
+                    # Get condition result
                     cond_res = self.COND() 
                     self.set_next_pair()
                     if self.token == "RPAREN":
@@ -73,7 +108,7 @@ class SynAnalyzer:
                                 print("Computation performed", ends=" ") 
                                 self.set_next_pair()
                                 if not self.check_semicolon():
-                                    self.error(1, "S:IF")
+                                    self.error(1, "S:IF:Missing semicolon")
                                   
                             # Recurse to S
                             elif self.token in ["IF", "PRINT", "IDENT"]: # S identifiers
@@ -86,11 +121,11 @@ class SynAnalyzer:
                             self.set_next_pair()
                             self.S()
                     else:
-                        self.error(1, "S:IF")
+                        self.error(1, "S:IF:Missing right parenthesis")
                 else:
                     self.error(1, "S:IF")
             else:
-                self.error(1, "S:IF")
+                self.error(1, "S:IF:Missing left parenthesis")
                 
             return ans
 
@@ -110,7 +145,7 @@ class SynAnalyzer:
                     msg = self.E()
                     print("Output: ({})".format(msg))
                     if msg is None:
-                        self.error(1, "S:PRINT")
+                        self.error(1, "S:PRINT:No string to print")
 
                 else:
                     self.error(2, "S")
@@ -118,13 +153,12 @@ class SynAnalyzer:
                 if self.token == "RPAREN":
                     self.set_next_pair()
                     if not self.check_semicolon():
-                        self.error(2, "S:PRINT")
+                        self.error(2, "S:PRINT:Missing semicolon")
                         
                 else:
-                    print(self.token)
-                    self.error(1, "S:PRINT")
+                    self.error(1, "S:PRINT:Missing right parenthesis")
             else:
-                self.error(1, "S:PRINT")
+                self.error(1, "S:PRINT:Missing left parenthesis")
                 
             return True
             
@@ -140,7 +174,7 @@ class SynAnalyzer:
                     self.variables[var_name] = val
                     print("Computation performed ({} = {})".format(var_name, val))
                     if not self.check_semicolon():
-                        self.error(1, "S:IDENT")
+                        self.error(1, "S:IDENT:Missing semicolon")
                 else:
                     self.error(1, "S:IDENT")
             else:
@@ -148,10 +182,9 @@ class SynAnalyzer:
                             
             return True
         
-    # should return true or false
+    # Compares two variables and returns true or false
     def COND(self):
         var1_val = self.E()
-
         var2_val = None
         cond1 = None
         cond2 = None
@@ -168,7 +201,7 @@ class SynAnalyzer:
                     self.set_next_pair()
                     var2_val = self.get_curr_lexeme()
                 else:
-                    error(1, "COND:NOT")
+                    error(1, "COND:NOT:Not a condition")
             else:
                 if self.token in self.conds:
                     cond2 = self.token
@@ -252,10 +285,10 @@ class SynAnalyzer:
         if self.token == "MINUS":
             self.set_next_pair()
             return -1*self.EC()
-        else:
+        else:returns true or false
             return self.EC()
     
-    # Production EC -> ED EC' 
+    # Production EC -> ED EC'
     def EC(self):
         x = self.ED()
         y = self.EC_prime()
@@ -291,7 +324,7 @@ class SynAnalyzer:
                 self.set_next_pair()
                 return val
             else:
-                self.error(1, "ED")
+                self.error(1, "ED:Missing right parenthesis")
         elif self.token == "SQRT":
             self.set_next_pair()
             if self.token == "LPAREN":
@@ -301,9 +334,9 @@ class SynAnalyzer:
                     self.set_next_pair()
                     return val ** (0.5)
                 else:
-                    self.error(1, "ED")
+                    self.error(1, "ED:Missing right parenthesis")
             else:
-                self.error(1, "ED")
+                self.error(1, "ED:Missing left parenthesis")
         else:
             self.error(1, "ED")
         return False

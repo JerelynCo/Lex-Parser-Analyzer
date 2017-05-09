@@ -2,7 +2,7 @@ from lex import LexAnalyzer
 from syn import SynAnalyzer
 
 def main():
-    la = LexAnalyzer(fn="/home/fassster/Documents/cs242/proj1/samples/files/prog3.txt")
+    la = LexAnalyzer(fn="/home/fassster/Documents/cs242/proj1/samples/files/prog1.txt")
     debug_print = True
     
     print("=====================================")
@@ -22,8 +22,10 @@ def main():
     pairs = []
     while True:
         
-        la.transitionState()
+        # check out transition matrix
+        la.transition_state()
         
+        # print pair if available
         if la.output_ready:
             pair = (la.token_str, la.lexeme)
             pairs.append(pair)
@@ -32,20 +34,31 @@ def main():
             
             la.output_ready = False
             la.lexeme = ""
-             
-        la.getNextToken() 
+
+        # move to next token
+        la.get_next_token() 
         
+        # print success if error-free termination
         if la.terminate:
-            if not la.err_flag:
-                print("\n=> LEXICAL ANALYSIS: SUCCESSFUL\n")
+            print("\n=> LEXICAL ANALYSIS: ", end="")
+            if la.err_flag:
+                print("UNSUCCESSFUL\n")
+            else:
+                print("SUCCESSFUL\n")
             break
-           
+         
+    # continue to syntax analysis if no error in lexical analysis  
     if not la.err_flag:
         sa = SynAnalyzer(lex_pairs=pairs)
         sa.set_next_pair()
         sa.S()
-        print(sa.variables)
-        if not sa.err_flag:
-            print("\n=> SYNTAX ANALYSIS: SUCCESSFUL\n")
-        
+
+        # print(sa.variables)
+
+        # print success if error-free termination
+        print("\n=> SYNTAX ANALYSIS: ", end="")
+        if sa.err_flag:
+            print("UNSUCCESSFUL\n")
+        else:
+            print("SUCCESSFUL\n")        
 main()

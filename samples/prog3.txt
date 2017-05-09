@@ -1,0 +1,44 @@
+
+# simple
+
+PRINT("Simple stuff");
+var123 = 1.23   # no semicolon here
+var456 = 45e6;
+PRINT(var123; PRINT(var456);  # missing right paren
+
+RESULT = var456/1.23; 
+PRINT(result1);
+PRINT = (1+1)**(2+2); # this assignment shouldn't compile
+PRINT result2); # missong left paren
+
+x = SQRT(5);
+PRINT(x+x);
+PRINT(111@---"); #  missing paren or lexical error
+
+# nested
+
+PRINT("Nested stuff")
+
+result3 == (1+1)*2-2*(1+(1+2)); # missing assignment operator
+PRINT(result3);
+y = SQRT(5(2+2)); # not an expression
+PRINT(y);
+PRINT(
+      PRINT(100) # erorr here too
+);
+
+# conditionals
+
+xx = 5;
+IF x > 2 PRINT("Greater"); # IF should have parens
+IF (x < 2) PRINT("Less");
+IF   (x+xx+y >= result3)   PRINT("Ok");
+IF(x+xx+y <result3)PRINT("Not Ok");
+
+# special cases
+
+PRINT(notyetassigned);
+nowassigned = notyetassigned + 1;
+IF ( 1 != 2
+ ) PRINT            # missing left paren
+nowassigned);

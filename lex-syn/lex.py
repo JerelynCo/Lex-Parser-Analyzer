@@ -16,8 +16,8 @@ tf = {0: {"letter": 1, "space": 0, "e": 1, "quotation": 3, "equals": 5, "plus": 
       # Identifier
       1: {"letter": 1, "e": 1, "digit": 1, "space": 2, "equals": 2, "nl":2, 
           "lparen": 2, "rparen": 2, "semicolon": 2, "eof": 2, "dot": 2,
-          "slash": 2, "modulo": 2, "mult": 2, "plus": 2, "minus": 2, "comma":2,
-          "error": 2},
+          "slash": 2, "not":2, "modulo": 2, "mult": 2, "plus": 2, "minus": 2, "comma":2,
+          "error": 2, "greater": 2, "lesser": 2},
       # String
       3: {"letter": 3, "e": 3, "digit": 3, "space": 3, "nl":3, 
           "dot": 3, "lparen": 3, "rparen": 3, "slash": 3, "modulo": 3, 
@@ -38,19 +38,19 @@ tf = {0: {"letter": 1, "space": 0, "e": 1, "quotation": 3, "equals": 5, "plus": 
           "lesser":24, "slash": 24, "nl":25},
       # Digit
       18: {"digit": 18, "dot": 26, "e": 20, "space": 22, "nl":22, "lparen": 22, 
-           "rparen": 22, "slash": 22, "modulo": 22, "plus": 22, "mult": 22,
-           "minus": 22, "equal": 22, "comma": 22, "semicolon": 22, 
+           "rparen": 22, "slash": 22, "not":22, "modulo": 22, "plus": 22, "mult": 22,
+           "minus": 22, "equals": 22, "comma": 22, "semicolon": 22, 
            "eof": 22, "error": 1},
       # Digit with no dot after
       19: {"digit": 19, "e": 20, "space":22, "nl":22, "lparen": 22, "rparen": 22, 
-           "slash": 22, "modulo": 22, "mult": 22, "plus": 22, "minus": 22, 
+           "slash": 22, "not":22, "modulo": 22, "mult": 22, "plus": 22, "minus": 22, 
            "equals": 22, "comma": 22, "semicolon": 22, "eof": 22, "error": 1},
       # Exponent
       20: {"plus": 21, "minus": 21, "digit": 21, "error": 1}, 
       # Digit after exponent
       21: {"digit": 21, "e": 22, "space":22, "nl":22, "lparen": 22, "rparen": 22, 
-           "slash": 22, "modulo": 22, "plus": 22, "minus": 22, 
-           "equal": 22, "quotation": 22, "comma": 22,
+           "slash": 22, "not":22, "modulo": 22, "plus": 22, "minus": 22, 
+           "equals": 22, "quotation": 22, "comma": 22,
            "semicolon": 22, "eof": 22, "mult": 22, "error": 1},
       26: {"digit": 19, "error":1},
      }
@@ -84,10 +84,10 @@ class LexAnalyzer:
         self.output_ready = False
         self.terminate = False
 
-    def setState(self, state):
+    def set_state(self, state):
         self.current_state = state   
         
-    def getNextToken(self):
+    def get_next_token(self):
         if self.position == len(self.input) -1:
             self.token = '$' # end of string marker
         else:
@@ -111,12 +111,12 @@ class LexAnalyzer:
         else:
             return "other"
     
-    def transitionState(self):
+    def transition_state(self):
         self.token_type = self.check_token_type(self.token)
 
         # Match to tf, update state  
         if self.token_type in tf[self.current_state].keys():
-            self.setState(tf[self.current_state][self.token_type])
+            self.set_state(tf[self.current_state][self.token_type])
         else:
             self.err_flag = True            
 
@@ -139,7 +139,7 @@ class LexAnalyzer:
             else:
                 self.output_ready = True
             
-            self.setState(self.start_state)
+            self.set_state(self.start_state)
             
         # Break loop if eof and error detected, else get next token and continue
         if self.token == "$":
